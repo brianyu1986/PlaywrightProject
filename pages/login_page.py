@@ -27,7 +27,14 @@ class LoginPage:
     
     @property
     def password_input_field(self):
-        return self.page.get_by_role("textbox", name="請輸入").nth(1)
+        # 使用更穩健的定位策略 - 查找所有文本框後過濾
+        all_inputs = self.page.locator('input[type="password"], input[type="text"]')
+        # 嘗試通過 placeholder 找到密碼輸入框
+        password_input = self.page.locator('input[placeholder*="密碼"], input[placeholder*="輸入"]')
+        if password_input.count() > 0:
+            return password_input.first
+        # 備選方案：使用 nth
+        return all_inputs.nth(1) if all_inputs.count() > 1 else all_inputs.first
     
     @property
     def password_confirm_button(self):
@@ -67,4 +74,5 @@ class LoginPage:
     def confirm_password(self):
         """確認密碼"""
         self.password_confirm_button.click()
-        self.login_button.click()
+        # 等待登入完成
+        self.page.wait_for_url("**/my-account/**", timeout=10000)
