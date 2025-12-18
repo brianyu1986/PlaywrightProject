@@ -1,0 +1,35 @@
+# Python 虚拟环境
+.venv/
+venv/
+env/
+ENV/
+*.pyc
+__pycache__/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Playwright
+test-results/
+playwright-report/
+.playwright/
+
+# 环境文件
+.env
+.env.local
+
+# 项目特定
+node_modules/
+package-lock.json
+
+# 个人笔记
+Note.txt
