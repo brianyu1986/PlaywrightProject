@@ -1,11 +1,11 @@
 """
-购物车功能测试
+購物車功能測試
 
-测试场景：
-1. 用户登录
-2. 搜索产品
-3. 添加产品到购物车
-4. 验证购物车中的产品
+測試場景：
+1. 使用者登入
+2. 搜尋產品
+3. 新增產品到購物車
+4. 驗證購物車中的產品
 """
 
 import pytest
@@ -16,76 +16,76 @@ from helpers.base_helpers import LogHelpers
 
 
 class TestCart:
-    """购物车测试类"""
+    """購物車測試類"""
     
     @pytest.mark.smoke
     def test_add_product_to_cart(self, page):
         """
-        测试：添加产品到购物车
+        測試：新增產品到購物車
         
-        步骤：
-        1. 登录用户
-        2. 浏览猫猫专区
-        3. 使用AI搜索功能搜索产品
-        4. 添加产品到购物车
-        5. 验证产品已添加到购物车
+        步驟：
+        1. 登入使用者
+        2. 瀏覽貓貓專區
+        3. 使用AI搜尋功能搜尋產品
+        4. 新增產品到購物車
+        5. 驗證產品已新增到購物車
         """
-        LogHelpers.log_step(1, "初始化页面")
+        LogHelpers.log_step(1, "初始化頁面")
         cart_page = CartPage(page)
         
-        LogHelpers.log_step(2, "进入购物车并点击用户")
+        LogHelpers.log_step(2, "進入購物車並點擊使用者")
         cart_page.go_to_cart()
         cart_page.go_to_user()
         
-        LogHelpers.log_step(3, "使用邮箱和密码登录")
+        LogHelpers.log_step(3, "使用電郵和密碼登入")
         login_page = LoginPage(page)
         user_data = TEST_USERS["valid_user"]
         login_page.login_with_email_and_password(user_data["email"], user_data["password"])
         
-        LogHelpers.log_step(4, "验证购物车为空")
+        LogHelpers.log_step(4, "驗證購物車為空")
         cart_page.verify_empty_cart()
         
-        LogHelpers.log_step(5, "点击猫猫专区")
+        LogHelpers.log_step(5, "點擊貓貓專區")
         cart_page.click_cat_section()
         
-        LogHelpers.log_step(6, "使用AI搜索功能")
+        LogHelpers.log_step(6, "使用AI搜尋功能")
         cart_page.click_ai_search()
         search_keyword = SEARCH_KEYWORDS["cat_food"]
         cart_page.search_product(search_keyword)
         
-        LogHelpers.log_step(7, "点击第一个产品")
+        LogHelpers.log_step(7, "點擊第一個產品")
         cart_page.click_first_product()
         
-        LogHelpers.log_step(8, f"选择产品变体: {PRODUCT_VARIANTS['format_1']}")
+        LogHelpers.log_step(8, f"選擇產品變體: {PRODUCT_VARIANTS['format_1']}")
         cart_page.select_product_variant(PRODUCT_VARIANTS["format_1"])
         
-        LogHelpers.log_step(9, "添加产品到购物车")
+        LogHelpers.log_step(9, "新增產品到購物車")
         cart_page.add_product_to_cart()
         
-        LogHelpers.log_step(10, "关闭弹出窗口")
+        LogHelpers.log_step(10, "關閉彈出視窗")
         cart_page.close_popup()
         
-        LogHelpers.log_step(11, "进入购物车")
+        LogHelpers.log_step(11, "進入購物車")
         cart_page.go_to_cart()
         
-        LogHelpers.log_step(12, "验证产品已添加到购物车")
+        LogHelpers.log_step(12, "驗證產品已新增到購物車")
         expected_product = "迪士尼貓狗系列 COZY 四季被"
         cart_page.verify_item_in_cart(expected_product)
         
-        print("\n✅ 测试通过：产品已成功添加到购物车")
+        print("\n✅ 測試通過：產品已成功新增到購物車")
     
     @pytest.mark.smoke
     def test_empty_cart_initially(self, page):
         """
-        测试：验证初始购物车为空
+        測試：驗證初始購物車為空
         """
-        LogHelpers.log_step(1, "初始化页面")
+        LogHelpers.log_step(1, "初始化頁面")
         cart_page = CartPage(page)
         
-        LogHelpers.log_step(2, "进入购物车")
+        LogHelpers.log_step(2, "進入購物車")
         cart_page.go_to_cart()
         
-        LogHelpers.log_step(3, "验证购物车为空")
+        LogHelpers.log_step(3, "驗證購物車為空")
         cart_page.verify_empty_cart()
         
-        print("\n✅ 测试通过：购物车初始状态为空")
+        print("\n✅ 測試通過：購物車初始狀態為空")

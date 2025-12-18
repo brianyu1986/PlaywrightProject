@@ -2,13 +2,13 @@ from playwright.sync_api import Page, expect
 
 
 class CartPage:
-    """购物车页面 - Page Object Model"""
+    """購物車頁面 - Page Object Model"""
 
     def __init__(self, page: Page):
         self.page = page
         self.page.goto("https://www.dogcatstar.com/")
     
-    # Locators
+    # 定位器
     @property
     def cart_link(self):
         return self.page.get_by_role("link", name="Cart")
@@ -53,52 +53,52 @@ class CartPage:
     def remove_button(self):
         return self.page.get_by_test_id("paper-card-main-normal").get_by_role("button")
     
-    # Actions
+    # 操作
     def go_to_cart(self):
-        """点击购物车链接"""
+        """點擊購物車連結"""
         self.cart_link.click()
     
     def go_to_user(self):
-        """点击用户链接"""
+        """點擊使用者連結"""
         self.user_link.click()
     
     def verify_empty_cart(self):
-        """验证购物车为空"""
+        """驗證購物車為空"""
         expect(self.empty_cart_heading).to_contain_text("購物車中沒有商品")
     
     def click_cat_section(self):
-        """点击猫猫专区"""
+        """點擊貓貓專區"""
         self.cat_section_button.click()
     
     def click_ai_search(self):
-        """点击AI搜索"""
+        """點擊AI搜尋"""
         self.ai_search_button.click()
     
     def search_product(self, keyword: str):
-        """搜索产品"""
+        """搜尋產品"""
         self.ai_search_input.click()
         self.ai_search_input.fill(keyword)
     
     def click_first_product(self):
-        """点击第一个产品"""
+        """點擊第一個產品"""
         self.product_links.first.click()
     
     def select_product_variant(self, variant_name: str):
-        """选择产品变体（如款式）"""
+        """選擇產品變體（如款式）"""
         self.page.get_by_role("button", name=variant_name).click()
     
     def add_product_to_cart(self):
-        """添加产品到购物车"""
+        """新增產品到購物車"""
         self.add_to_cart_button.click()
     
     def close_popup(self):
-        """关闭弹出窗口"""
+        """關閉彈出視窗"""
         self.popup_close_button.click()
     
     def verify_item_in_cart(self, item_name: str):
-        """验证购物车中有特定商品"""
+        """驗證購物車中有特定商品"""
         expect(self.cart_item_heading).to_contain_text(item_name)
     
     def remove_item_from_cart(self, index: int = 0):
-        """从购物车删除商品"""
+        """從購物車刪除商品"""
         self.remove_button.filter(has_text="").nth(index).click()

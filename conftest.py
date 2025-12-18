@@ -3,17 +3,17 @@ from playwright.sync_api import sync_playwright, Page, Browser
 import os
 from pathlib import Path
 
-# 测试结果目录
+# 測試結果目錄
 TEST_RESULTS_DIR = Path("./test-results")
 TEST_RESULTS_DIR.mkdir(exist_ok=True)
 
-# Auth 文件路径（用于已登录状态）
+# Auth 檔案路徑（用於已登入狀態）
 AUTH_FILE = "./fixtures/auth.json"
 
 
 @pytest.fixture(scope="session")
 def browser() -> Browser:
-    """Session 级别的浏览器实例 - 在整个测试会话中共享"""
+    """Session 層級的瀏覽器實例 - 在整個測試會話中共享"""
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False)
         yield browser
@@ -22,7 +22,7 @@ def browser() -> Browser:
 
 @pytest.fixture
 def context(browser):
-    """为每个测试创建新的浏览器上下文"""
+    """為每個測試建立新的瀏覽器上下文"""
     context = browser.new_context()
     yield context
     context.close()
@@ -30,7 +30,7 @@ def context(browser):
 
 @pytest.fixture
 def page(context) -> Page:
-    """为每个测试创建新的页面"""
+    """為每個測試建立新的頁面"""
     page = context.new_page()
     yield page
     page.close()
@@ -38,7 +38,7 @@ def page(context) -> Page:
 
 @pytest.fixture
 def authenticated_page(browser):
-    """返回已登录的页面（使用保存的认证状态）"""
+    """返回已登入的頁面（使用保存的認證狀態）"""
     if not os.path.exists(AUTH_FILE):
         pytest.skip(f"Auth file not found: {AUTH_FILE}")
     
@@ -50,15 +50,15 @@ def authenticated_page(browser):
 
 @pytest.fixture(autouse=True)
 def test_setup_teardown():
-    """测试前后的设置和清理"""
-    # Setup
+    """測試前後的設定和清理"""
+    # 設定
     print("\n=== Test Started ===")
     yield
-    # Teardown
+    # 清理
     print("=== Test Completed ===\n")
 
 
-# Hook: 测试失败时自动截图
+# 鈎子：測試失敗時自動截圖
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item, call):
     outcome = yield
