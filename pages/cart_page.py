@@ -195,26 +195,20 @@ class CartPage:
             LogHelpers.log_step("ERROR: 未找到商品鏈接")
             return product_info
         
-        # 獲取第一個商品的容器（.product-item 或其父元素）
+        # 獲取第一個商品的容器（直接使用 Page 進行全頁搜索）
         first_product_link = product_links[0]
-        
-        # 向上查找商品容器
-        product_container = first_product_link.locator("ancestor::.product-item, ancestor::article, ancestor::li").first
-        
-        if product_container.count() == 0:
-            LogHelpers.log_step("WARNING: 未找到商品容器，使用全頁搜索")
-            product_container = self.page
         
         LogHelpers.log_step("滾動到第一個商品...")
         first_product_link.scroll_into_view_if_needed()
         self.page.wait_for_timeout(2000)
         
-        # 在商品容器內查找添加購物車按鈕
+        # 在頁面上查找添加購物車按鈕（通常在第一個商品附近）
         LogHelpers.log_step("尋找 '加入購物車' 按鈕...")
-        add_to_cart_buttons = product_container.locator('button:has-text("加入購物車"), a.button:has-text("加入購物車"), .add-to-cart, button.add_to_cart').all()
+        add_to_cart_buttons = self.page.locator('button:has-text("加入購物車"), a.button:has-text("加入購物車"), .add-to-cart, button.add_to_cart').all()
         LogHelpers.log_step(f"找到 {len(add_to_cart_buttons)} 個按鈕")
         
         if len(add_to_cart_buttons) > 0:
+            # 使用第一個按鈕
             add_to_cart_button = add_to_cart_buttons[0]
             LogHelpers.log_step("✓ 找到按鈕，正在點擊...")
             try:
