@@ -351,7 +351,75 @@ def test_visual_regression(page):
    - 失敗時自動截圖
    - 詳細的錯誤信息
 
-## 🔗 相關資源
+## � 文檔與支持
+
+### 📖 核心文檔
+
+| 文檔 | 用途 | 何時使用 |
+|------|------|---------|
+| **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** | 快速參考卡 | 日常開發、需要快速查詢 |
+| **[STORAGE_STATE_GUIDE.md](STORAGE_STATE_GUIDE.md)** | 詳細使用指南 | 了解 Storage State 機制 |
+| **[ARCHITECTURE.md](ARCHITECTURE.md)** | 架構設計文檔 | 深入理解系統設計 |
+| **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** | 文檔索引 | 查找所有可用文檔 |
+
+### 📋 進度與報告
+
+| 文檔 | 內容 | 適合人群 |
+|------|------|---------|
+| **[OPTIMIZATION_PROGRESS.md](OPTIMIZATION_PROGRESS.md)** | 優化進展報告 | 技術負責人、進度跟進 |
+| **[TEST_FRAMEWORK_COMPLETION_REPORT.md](TEST_FRAMEWORK_COMPLETION_REPORT.md)** | 框架完成報告 | 評估框架質量 |
+| **[FINAL_COMPLETION_REPORT.md](FINAL_COMPLETION_REPORT.md)** | 最終完成報告 | 項目評審、決策者 |
+
+### 🎯 快速入門流程
+
+**初次使用？**
+```
+README.md（本文檔）
+    ↓
+QUICK_REFERENCE.md（常用命令）
+    ↓
+STORAGE_STATE_GUIDE.md（詳細說明）
+    ↓
+實踐操作
+```
+
+**遇到問題？**
+```
+QUICK_REFERENCE.md（疑難排解部分）
+    ↓
+相關文檔的故障排除部分
+    ↓
+DOCUMENTATION_INDEX.md（查找相關文檔）
+```
+
+**進行評審？**
+```
+FINAL_COMPLETION_REPORT.md（總體評估）
+    ↓
+ARCHITECTURE.md（系統設計）
+    ↓
+IMPLEMENTATION_LOG.md（實施記錄）
+```
+
+### 🔧 常用命令速查
+
+```bash
+# 生成驗證狀態（首次執行）
+pytest tests/test_login.py::TestLogin::test_login_with_email_and_password -v
+
+# 運行購物車測試
+pytest tests/test_cart_with_auth.py -v
+
+# 運行煙霧測試
+pytest -m smoke -v
+
+# 運行特定測試
+pytest tests/test_cart_with_auth.py::TestCartWithAuth::test_cart_is_initially_empty -v
+```
+
+📖 **更多命令請查看** → [QUICK_REFERENCE.md](QUICK_REFERENCE.md)
+
+## �🔗 相關資源
 
 - [Playwright 官方文檔](https://playwright.dev/python/)
 - [Pytest 官方文檔](https://docs.pytest.org/)

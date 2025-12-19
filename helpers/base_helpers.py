@@ -49,9 +49,20 @@ class LogHelpers:
         print(f"[{timestamp}] {action}")
     
     @staticmethod
-    def log_step(step_number: int, description: str):
-        """記錄測試步驟"""
-        print(f"\n--- Step {step_number}: {description} ---")
+    def log_step(step_info, description: str = None):
+        """
+        記錄測試步驟
+        
+        支援兩種用法：
+        1. log_step("描述文字") - 簡單描述
+        2. log_step(1, "描述文字") - 包含步驟號
+        """
+        if isinstance(step_info, int):
+            # 格式：log_step(1, "描述")
+            print(f"\n--- Step {step_info}: {description} ---")
+        else:
+            # 格式：log_step("描述")
+            print(f"\n>> {step_info}")
 
 
 class RetryHelpers:

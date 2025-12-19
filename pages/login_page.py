@@ -16,9 +16,13 @@ class LoginPage:
     
     @property
     def email_input_field(self):
-        """電郵輸入框 - 使用類型和位置選擇"""
-        inputs = self.page.locator('input[type="text"], input[type="email"]')
-        return inputs.first if inputs.count() > 0 else None
+        """電郵輸入框 - 使用特定的選擇器"""
+        # 嘗試使用 get_by_placeholder 先找到具體的郵件輸入框
+        email_field = self.page.locator("input[type='email'], input[placeholder*='郵']").first
+        if email_field.count() > 0:
+            return email_field
+        # 備選方案：使用 get_by_role 但加上更多過濾
+        return self.page.get_by_role("textbox").locator("visible=true").first
     
     @property
     def email_confirm_button(self):
@@ -33,9 +37,13 @@ class LoginPage:
     
     @property
     def password_input_field(self):
-        """密碼輸入框 - 使用類型選擇器"""
-        password_input = self.page.locator('input[type="password"]')
-        return password_input.first if password_input.count() > 0 else None
+        """密碼輸入框 - 使用特定的選擇器"""
+        # 嘗試使用 get_by_type 選擇密碼輸入框
+        password_field = self.page.locator("input[type='password']").first
+        if password_field.count() > 0:
+            return password_field
+        # 備選方案
+        return self.page.get_by_role("textbox").nth(1)
     
     @property
     def password_confirm_button(self):
