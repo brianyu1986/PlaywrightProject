@@ -68,32 +68,29 @@ class CartPage:
         """
         LogHelpers.log_step("尋找商品信息...")
         
-        # 使用更精確的選擇器查找商品卡片
-        # 優先使用 WooCommerce 標準選擇器
-        product_articles = self.page.locator('article.product, li.product').all()
-        LogHelpers.log_step(f"找到 {len(product_articles)} 個商品文章")
+        # 使用 WooCommerce 標準選擇器查找商品
+        # 嘗試使用 a.woocommerce-loop-product__link 這是真實商品鏈接
+        product_links = self.page.locator('a.woocommerce-loop-product__link').all()
+        LogHelpers.log_step(f"找到 {len(product_links)} 個商品鏈接")
         
-        if len(product_articles) > 0:
-            # 在第一個商品卡片內查找標題和價格
-            first_product = product_articles[0]
-            
-            # 尋找商品名稱 - 在卡片內尋找
-            product_name_locator = first_product.locator('h2, h3, .product-title, a.product-name').first
-            product_name = product_name_locator.text_content().strip() if product_name_locator.count() > 0 else "Unknown"
-            
-            # 尋找商品價格 - 在卡片內尋找
-            price_locator = first_product.locator('.price, .product-price, .woocommerce-Price-amount').first
-            product_price = price_locator.text_content().strip() if price_locator.count() > 0 else "N/A"
-            
+        if len(product_links) > 0:
+            # 使用第一個商品鏈接的文本作為商品名稱
+            first_product_link = product_links[0]
+            product_name = first_product_link.text_content().strip()
             LogHelpers.log_step(f"✓ 找到商品: {product_name}")
+            
+            # 尋找價格 - 通常在商品鏈接的父元素內
+            parent = first_product_link.locator("..")
+            price_locator = parent.locator('.price, .product-price, .woocommerce-Price-amount, [class*="price"]').first
+            product_price = price_locator.text_content().strip() if price_locator.count() > 0 else "N/A"
             LogHelpers.log_step(f"  價格: {product_price}")
         else:
-            # 備用方案：使用更寬鬆的選擇器
-            LogHelpers.log_step("未找到 article/li 元素，使用備用選擇器...")
-            product_name_locator = self.page.locator('[class*="product-title"], h2, h3, [class*="title"]').first
+            # 備用方案
+            LogHelpers.log_step("未找到商品鏈接，使用備用選擇器...")
+            product_name_locator = self.page.locator('.product-item-name, [class*="product-title"], h2, h3').first
             product_name = product_name_locator.text_content().strip() if product_name_locator.count() > 0 else "Unknown Product"
             
-            price_locator = self.page.locator('[class*="price"], [class*="amount"], span:has-text("$")').first
+            price_locator = self.page.locator('[class*="price"], [class*="amount"]').first
             product_price = price_locator.text_content().strip() if price_locator.count() > 0 else "Unknown Price"
         
         return {
@@ -116,27 +113,35 @@ class CartPage:
         product_info = self.get_first_product_info()
         LogHelpers.log_step(f"商品信息: {product_info['name']} - {product_info['price']}")
         
-        # 找到第一個商品文章並滾動到它
-        product_articles = self.page.locator('article.product, li.product').all()
-        if len(product_articles) == 0:
-            LogHelpers.log_step("WARNING: No product articles found")
+        # 找到第一個商品鏈接所在的容器
+        LogHelpers.log_step("找到商品容器...")
+        product_links = self.page.locator('a.woocommerce-loop-product__link').all()
+        
+        if len(product_links) == 0:
+            LogHelpers.log_step("ERROR: 未找到商品鏈接")
             return product_info
         
-        first_product = product_articles[0]
+        # 獲取第一個商品的容器（.product-item 或其父元素）
+        first_product_link = product_links[0]
+        
+        # 向上查找商品容器
+        product_container = first_product_link.locator("ancestor::.product-item, ancestor::article, ancestor::li").first
+        
+        if product_container.count() == 0:
+            LogHelpers.log_step("WARNING: 未找到商品容器，使用全頁搜索")
+            product_container = self.page
+        
         LogHelpers.log_step("滾動到第一個商品...")
-        first_product.scroll_into_view_if_needed()
-        self.page.wait_for_timeout(2000)  # 增加等待時間以避免速率限制
+        first_product_link.scroll_into_view_if_needed()
+        self.page.wait_for_timeout(2000)
         
-        # 在第一個商品卡片內查找添加購物車按鈕
-        LogHelpers.log_step("尋找該商品的 '加入購物車' 按鈕...")
-        add_to_cart_button = first_product.locator('button:has-text("加入購物車"), a.button:has-text("加入購物車"), .add-to-cart').first
+        # 在商品容器內查找添加購物車按鈕
+        LogHelpers.log_step("尋找 '加入購物車' 按鈕...")
+        add_to_cart_buttons = product_container.locator('button:has-text("加入購物車"), a.button:has-text("加入購物車"), .add-to-cart, button.add_to_cart').all()
+        LogHelpers.log_step(f"找到 {len(add_to_cart_buttons)} 個按鈕")
         
-        if add_to_cart_button.count() == 0:
-            # 如果在卡片內找不到，嘗試找頁面上的第一個
-            LogHelpers.log_step("在卡片內未找到，尋找頁面上的按鈕...")
-            add_to_cart_button = self.page.locator('button:has-text("加入購物車")').first
-        
-        if add_to_cart_button.count() > 0:
+        if len(add_to_cart_buttons) > 0:
+            add_to_cart_button = add_to_cart_buttons[0]
             LogHelpers.log_step("✓ 找到按鈕，正在點擊...")
             try:
                 add_to_cart_button.scroll_into_view_if_needed()
@@ -172,7 +177,7 @@ class CartPage:
             
             # 尋找並點擊確認按鈕
             LogHelpers.log_step("尋找確認按鈕...")
-            self.page.wait_for_timeout(1500)  # 增加等待時間
+            self.page.wait_for_timeout(1500)
             
             # 嘗試多種確認按鈕選擇器
             confirm_button = None
@@ -203,7 +208,7 @@ class CartPage:
                     self.page.wait_for_timeout(1000)
                     confirm_button.click(force=True)
                     LogHelpers.log_step("✓ 確認按鈕已點擊")
-                    self.page.wait_for_timeout(3000)  # 增加等待時間
+                    self.page.wait_for_timeout(3000)
                 except Exception as e:
                     error_msg = str(e)
                     if "rate" in error_msg.lower():
@@ -350,17 +355,48 @@ class CartPage:
         """
         清空購物車中的所有商品
         """
-        # 查找清空購物車按鈕或刪除按鈕
-        clear_buttons = self.page.locator('button:has-text("清空"), button:has-text("刪除"), button:has-text("remove")').all()
+        LogHelpers.log_step("尋找刪除按鈕...")
         
-        # 逐個點擊刪除按鈕
-        for _ in range(len(clear_buttons)):
-            delete_button = self.page.locator('button:has-text("刪除"), button:has-text("remove")').first
-            if delete_button.count() > 0:
-                delete_button.click()
-                self.page.wait_for_timeout(500)
-            else:
-                break
+        # 嘗試多種刪除按鈕選擇器
+        selectors = [
+            'button:has-text("刪除")',
+            'button:has-text("移除")',
+            'button:has-text("Remove")',
+            'button.remove, a.remove, [class*="remove"]',
+            '.product-remove a, .product-remove button',
+            'a[data-product_key]'  # WooCommerce 標準刪除按鈕
+        ]
+        
+        for selector in selectors:
+            delete_buttons = self.page.locator(selector).all()
+            if len(delete_buttons) > 0:
+                LogHelpers.log_step(f"✓ 找到 {len(delete_buttons)} 個刪除按鈕 (選擇器: {selector})")
+                
+                # 逐個點擊刪除按鈕
+                attempt = 0
+                while attempt < len(delete_buttons):
+                    try:
+                        # 重新查找按鈕，因為 DOM 可能已更改
+                        new_buttons = self.page.locator(selector).all()
+                        if len(new_buttons) == 0:
+                            LogHelpers.log_step("✓ 所有商品已刪除")
+                            break
+                        
+                        btn = new_buttons[0]
+                        LogHelpers.log_step(f"點擊刪除按鈕 {attempt + 1}...")
+                        btn.scroll_into_view_if_needed()
+                        self.page.wait_for_timeout(500)
+                        btn.click(force=True)
+                        LogHelpers.log_step("✓ 已點擊")
+                        self.page.wait_for_timeout(2000)  # 等待購物車更新
+                        attempt += 1
+                    except Exception as e:
+                        LogHelpers.log_step(f"WARNING: 刪除失敗: {str(e)}")
+                        break
+                
+                return  # 成功找到並嘗試刪除
+        
+        LogHelpers.log_step("WARNING: 未找到任何刪除按鈕")
     
     @property
     def product_links(self):
