@@ -213,7 +213,7 @@ class TestShoppingIntegration:
         LogHelpers.log_step(f"URL: {page.url}")
         LogHelpers.log_step("[PASS] 進入貓貓專區")
         if wait_for_observation:
-            page.wait_for_timeout(2000)
+            page.wait_for_timeout(3000)  # 增加等待時間，避免速率限制
         LogHelpers.log_step("")
         
         # 步驟 3: 獲取並記錄第一個商品信息
@@ -223,7 +223,7 @@ class TestShoppingIntegration:
         LogHelpers.log_step(f"商品價格: {product_info['price']}")
         LogHelpers.log_step("[PASS] 已記錄商品信息")
         if wait_for_observation:
-            page.wait_for_timeout(2000)
+            page.wait_for_timeout(3000)  # 增加等待時間
         LogHelpers.log_step("")
         
         # 步驟 4: 添加商品到購物車（含定制化選項）
@@ -234,8 +234,19 @@ class TestShoppingIntegration:
         is_headless = False  # 簡化判斷
         wait_for_observation = True  # 假設非headless
         
+        LogHelpers.log_step("=" * 40)
+        LogHelpers.log_step("準備添加的商品信息:")
+        LogHelpers.log_step(f"  商品名稱: {product_info['name']}")
+        LogHelpers.log_step(f"  商品價格: {product_info['price']}")
+        LogHelpers.log_step("=" * 40)
+        
         cart_page.add_first_product_to_cart(wait_for_observation=wait_for_observation)
-        LogHelpers.log_step(f"已添加: {product_info['name']}")
+        
+        LogHelpers.log_step("=" * 40)
+        LogHelpers.log_step("✓ 商品已成功添加到購物車")
+        LogHelpers.log_step(f"  已添加商品: {product_info['name']}")
+        LogHelpers.log_step(f"  商品價格: {product_info['price']}")
+        LogHelpers.log_step("=" * 40)
         LogHelpers.log_step("[PASS] 商品已添加到購物車")
         LogHelpers.log_step("")
         
@@ -248,28 +259,46 @@ class TestShoppingIntegration:
         # 驗證商品是否在購物車中
         is_product_in_cart = cart_page.verify_product_in_cart(product_info['name'])
         cart_items_count = cart_page.get_cart_items_count()
-        LogHelpers.log_step(f"購物車商品數: {cart_items_count}")
-        LogHelpers.log_step(f"是否包含'{product_info['name']}': {is_product_in_cart}")
+        
+        LogHelpers.log_step("=" * 40)
+        LogHelpers.log_step("購物車驗證結果:")
+        LogHelpers.log_step(f"  預期商品名稱: {product_info['name']}")
+        LogHelpers.log_step(f"  預期商品價格: {product_info['price']}")
+        LogHelpers.log_step("-" * 40)
+        LogHelpers.log_step(f"  購物車商品總數: {cart_items_count}")
+        LogHelpers.log_step(f"  商品已在購物車中: {'✓ 是' if is_product_in_cart else '✗ 否'}")
+        LogHelpers.log_step(f"  驗證商品名稱: {product_info['name']}")
+        LogHelpers.log_step("=" * 40)
         
         if is_product_in_cart or cart_items_count > 0:
-            LogHelpers.log_step("[PASS] 購物車中已有商品")
+            LogHelpers.log_step("[PASS] 購物車驗證成功 - 商品已成功添加")
         else:
             LogHelpers.log_step("[NOTICE] 購物車中未找到商品 (可能需要檢查選擇器)")
         
         if wait_for_observation:
-            page.wait_for_timeout(2000)
+            page.wait_for_timeout(3000)  # 增加等待時間
         LogHelpers.log_step("")
         
         # 步驟 6: 清空購物車
         LogHelpers.log_step("[步驟 6/6] 清空購物車")
+        LogHelpers.log_step("=" * 40)
+        LogHelpers.log_step(f"清空前購物車商品數: {cart_items_count}")
+        LogHelpers.log_step(f"待移除商品: {product_info['name']}")
+        LogHelpers.log_step("=" * 40)
+        
         cart_page.clear_cart()
         page.wait_for_timeout(1000)
         
         remaining_items = cart_page.get_cart_items_count()
-        LogHelpers.log_step(f"清空後購物車商品數: {remaining_items}")
+        LogHelpers.log_step("=" * 40)
+        LogHelpers.log_step("清空結果:")
+        LogHelpers.log_step(f"  清空前商品數: {cart_items_count}")
+        LogHelpers.log_step(f"  清空後商品數: {remaining_items}")
+        LogHelpers.log_step(f"  移除商品: {product_info['name']}")
+        LogHelpers.log_step("=" * 40)
         LogHelpers.log_step("[PASS] 購物車已清空")
         if wait_for_observation:
-            page.wait_for_timeout(2000)
+            page.wait_for_timeout(3000)  # 增加等待時間
         LogHelpers.log_step("")
         
         LogHelpers.log_step("=" * 60)

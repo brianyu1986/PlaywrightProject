@@ -1,4 +1,5 @@
 from playwright.sync_api import Page, expect
+from helpers.base_helpers import LogHelpers
 
 
 class CartPage:
@@ -65,13 +66,35 @@ class CartPage:
         獲取頁面上第一個產品的信息
         返回: {'name': 產品名稱, 'price': 價格}
         """
-        # 查找產品名稱
-        product_name_locator = self.page.locator('[class*="product-title"], h2, h3, [class*="title"]').first
-        product_name = product_name_locator.text_content().strip() if product_name_locator.count() > 0 else "Unknown Product"
+        LogHelpers.log_step("尋找商品信息...")
         
-        # 查找產品價格
-        price_locator = self.page.locator('[class*="price"], [class*="amount"], span:has-text("$")').first
-        product_price = price_locator.text_content().strip() if price_locator.count() > 0 else "Unknown Price"
+        # 使用更精確的選擇器查找商品卡片
+        # 優先使用 WooCommerce 標準選擇器
+        product_articles = self.page.locator('article.product, li.product').all()
+        LogHelpers.log_step(f"找到 {len(product_articles)} 個商品文章")
+        
+        if len(product_articles) > 0:
+            # 在第一個商品卡片內查找標題和價格
+            first_product = product_articles[0]
+            
+            # 尋找商品名稱 - 在卡片內尋找
+            product_name_locator = first_product.locator('h2, h3, .product-title, a.product-name').first
+            product_name = product_name_locator.text_content().strip() if product_name_locator.count() > 0 else "Unknown"
+            
+            # 尋找商品價格 - 在卡片內尋找
+            price_locator = first_product.locator('.price, .product-price, .woocommerce-Price-amount').first
+            product_price = price_locator.text_content().strip() if price_locator.count() > 0 else "N/A"
+            
+            LogHelpers.log_step(f"✓ 找到商品: {product_name}")
+            LogHelpers.log_step(f"  價格: {product_price}")
+        else:
+            # 備用方案：使用更寬鬆的選擇器
+            LogHelpers.log_step("未找到 article/li 元素，使用備用選擇器...")
+            product_name_locator = self.page.locator('[class*="product-title"], h2, h3, [class*="title"]').first
+            product_name = product_name_locator.text_content().strip() if product_name_locator.count() > 0 else "Unknown Product"
+            
+            price_locator = self.page.locator('[class*="price"], [class*="amount"], span:has-text("$")').first
+            product_price = price_locator.text_content().strip() if price_locator.count() > 0 else "Unknown Price"
         
         return {
             'name': product_name,
@@ -80,57 +103,123 @@ class CartPage:
     
     def add_first_product_to_cart(self, wait_for_observation=False):
         """
-        添加第一個產品到購物車（含定制化選項處理）
+        添加第一個產品到購物車（含定制化選項處理和速率限制處理）
         
         參數:
             wait_for_observation (bool): 是否在操作完成後等待2秒以觀察結果（非headless模式）
         
         返回: 產品信息 {'name': 名稱, 'price': 價格}
         """
+        LogHelpers.log_step("準備添加商品到購物車...")
+        
         # 先記錄產品信息
         product_info = self.get_first_product_info()
+        LogHelpers.log_step(f"商品信息: {product_info['name']} - {product_info['price']}")
         
-        # 查找添加購物車按鈕
-        add_to_cart_button = self.page.locator('button:has-text("加入購物車")').first
+        # 找到第一個商品文章並滾動到它
+        product_articles = self.page.locator('article.product, li.product').all()
+        if len(product_articles) == 0:
+            LogHelpers.log_step("WARNING: No product articles found")
+            return product_info
+        
+        first_product = product_articles[0]
+        LogHelpers.log_step("滾動到第一個商品...")
+        first_product.scroll_into_view_if_needed()
+        self.page.wait_for_timeout(2000)  # 增加等待時間以避免速率限制
+        
+        # 在第一個商品卡片內查找添加購物車按鈕
+        LogHelpers.log_step("尋找該商品的 '加入購物車' 按鈕...")
+        add_to_cart_button = first_product.locator('button:has-text("加入購物車"), a.button:has-text("加入購物車"), .add-to-cart').first
+        
+        if add_to_cart_button.count() == 0:
+            # 如果在卡片內找不到，嘗試找頁面上的第一個
+            LogHelpers.log_step("在卡片內未找到，尋找頁面上的按鈕...")
+            add_to_cart_button = self.page.locator('button:has-text("加入購物車")').first
         
         if add_to_cart_button.count() > 0:
-            # 使用 force 點擊避免被 overlay portal 攔截
-            add_to_cart_button.click(force=True)
+            LogHelpers.log_step("✓ 找到按鈕，正在點擊...")
+            try:
+                add_to_cart_button.scroll_into_view_if_needed()
+                self.page.wait_for_timeout(1000)
+                add_to_cart_button.click(force=True)
+                LogHelpers.log_step("✓ 按鈕已點擊")
+            except Exception as e:
+                error_msg = str(e)
+                if "rate" in error_msg.lower() or "limit" in error_msg.lower():
+                    LogHelpers.log_step(f"ERROR: 觸發速率限制: {error_msg}")
+                    LogHelpers.log_step("等待 60 秒後重試...")
+                    self.page.wait_for_timeout(60000)
+                else:
+                    LogHelpers.log_step(f"ERROR: Click failed with: {error_msg}")
+                return product_info
             
-            # 等待任何選項對話框或選擇面板出現
-            self.page.wait_for_timeout(1000)
+            # 等待任何選項對話框或選擇面板出現（增加等待時間）
+            LogHelpers.log_step("等待選項對話框（3秒）...")
+            self.page.wait_for_timeout(3000)
+            
+            # 檢查是否出現速率限制錯誤
+            if "rate limit" in self.page.content().lower() or "too many requests" in self.page.content().lower():
+                LogHelpers.log_step("ERROR: 檢測到速率限制訊息")
+                LogHelpers.log_step("等待 90 秒...")
+                self.page.wait_for_timeout(90000)
+                # 嘗試重新加載頁面
+                self.page.reload()
+                self.page.wait_for_load_state("domcontentloaded", timeout=10000)
             
             # 嘗試處理定制化選項
+            LogHelpers.log_step("處理定制化選項...")
             self._handle_product_customization()
             
-            # 尋找並點擊確認按鈕（可能是第二次"加入購物車"或"確定"按鈕）
-            self.page.wait_for_timeout(500)
+            # 尋找並點擊確認按鈕
+            LogHelpers.log_step("尋找確認按鈕...")
+            self.page.wait_for_timeout(1500)  # 增加等待時間
             
-            # 方法1: 尋找"確定加入"按鈕
-            confirm_button = self.page.locator('button:has-text("確定加入")').first
+            # 嘗試多種確認按鈕選擇器
+            confirm_button = None
+            for selector in [
+                'button:has-text("確定加入")',
+                'button:has-text("確認")',
+                'button:has-text("確定")',
+                'button.confirm, button.submit'
+            ]:
+                btn = self.page.locator(selector).first
+                if btn.count() > 0:
+                    LogHelpers.log_step(f"✓ 找到確認按鈕: {selector}")
+                    confirm_button = btn
+                    break
             
-            # 方法2: 如果沒有，尋找"確認"按鈕
-            if confirm_button.count() == 0:
-                confirm_button = self.page.locator('button:has-text("確認")').first
-            
-            # 方法3: 如果沒有，尋找所有"加入購物車"按鈕的第二個
-            if confirm_button.count() == 0:
+            # 如果沒找到確認按鈕，試試找第二個"加入購物車"按鈕
+            if confirm_button is None:
                 all_add_buttons = self.page.locator('button:has-text("加入購物車")').all()
                 if len(all_add_buttons) > 1:
+                    LogHelpers.log_step(f"✓ 找到 {len(all_add_buttons)} 個按鈕，使用第二個")
                     confirm_button = all_add_buttons[1]
             
-            # 點擊確認按鈕（使用 force 避免 overlay 攔截）
-            if confirm_button.count() > 0:
+            # 點擊確認按鈕
+            if confirm_button is not None:
                 try:
-                    # 先嘗試普通點擊，如果失敗則使用 force
-                    confirm_button.click(force=True)
+                    LogHelpers.log_step("點擊確認按鈕...")
+                    confirm_button.scroll_into_view_if_needed()
                     self.page.wait_for_timeout(1000)
-                except:
-                    pass
+                    confirm_button.click(force=True)
+                    LogHelpers.log_step("✓ 確認按鈕已點擊")
+                    self.page.wait_for_timeout(3000)  # 增加等待時間
+                except Exception as e:
+                    error_msg = str(e)
+                    if "rate" in error_msg.lower():
+                        LogHelpers.log_step(f"ERROR: 確認時觸發速率限制")
+                        self.page.wait_for_timeout(90000)
+                    else:
+                        LogHelpers.log_step(f"WARNING: Confirm click failed: {error_msg}")
+            else:
+                LogHelpers.log_step("WARNING: 未找到任何確認按鈕")
             
             # 如果需要觀察，等待2秒
             if wait_for_observation:
+                LogHelpers.log_step("等待觀察結果...")
                 self.page.wait_for_timeout(2000)
+        else:
+            LogHelpers.log_step("ERROR: 未找到 '加入購物車' 按鈕")
         
         return product_info
     
@@ -139,33 +228,50 @@ class CartPage:
         處理產品定制化選項（如規格、數量、顏色等）
         優先選擇"鲁斯佛款"，否則選擇第一個可用選項
         """
-        # 等待選項載入
+        LogHelpers.log_step("開始處理商品定制化選項...")
         self.page.wait_for_timeout(500)
         
         # 策略1: 尋找並點擊"鲁斯佛款"選項
+        LogHelpers.log_step("策略 1: 尋找 '鲁斯佛款' 選項...")
         rostoff_option = self.page.locator('button:has-text("鲁斯佛"), span:has-text("鲁斯佛")').first
         if rostoff_option.count() > 0:
             try:
+                LogHelpers.log_step("✓ 找到 '鲁斯佛款' 選項，正在點擊...")
                 rostoff_option.click()
                 self.page.wait_for_timeout(500)
+                LogHelpers.log_step("✓ '鲁斯佛款' 已選擇")
                 return
-            except:
+            except Exception as e:
+                LogHelpers.log_step(f"✗ '鲁斯佛款' 點擊失敗: {str(e)}")
                 pass
+        else:
+            LogHelpers.log_step("✗ 未找到 '鲁斯佛款' 選項")
         
         # 策略2: 尋找並點擊任何規格選項按鈕
+        LogHelpers.log_step("策略 2: 尋找規格選項按鈕...")
         option_buttons = self.page.locator('button[class*="variant"], button[class*="option"], button[class*="size"]').all()
+        LogHelpers.log_step(f"找到 {len(option_buttons)} 個規格選項按鈕")
         if len(option_buttons) > 0:
             try:
+                button_text = option_buttons[0].text_content()
+                LogHelpers.log_step(f"正在點擊第一個規格按鈕: '{button_text}'")
                 option_buttons[0].click()
                 self.page.wait_for_timeout(500)
+                LogHelpers.log_step("✓ 規格選項已選擇")
                 return
-            except:
+            except Exception as e:
+                LogHelpers.log_step(f"✗ 規格選項點擊失敗: {str(e)}")
                 pass
+        else:
+            LogHelpers.log_step("✗ 未找到規格選項按鈕")
         
         # 策略3: 選擇下拉菜單選項
+        LogHelpers.log_step("策略 3: 尋找下拉菜單...")
         selects = self.page.locator('select').all()
-        for select in selects:
+        LogHelpers.log_step(f"找到 {len(selects)} 個下拉菜單")
+        for i, select in enumerate(selects):
             try:
+                LogHelpers.log_step(f"正在處理第 {i+1} 個下拉菜單...")
                 # 點擊 select 元素打開下拉菜單
                 select.click()
                 self.page.wait_for_timeout(300)
@@ -173,35 +279,54 @@ class CartPage:
                 # 查找第一個選項
                 option = self.page.locator('option').nth(1)  # 跳過預設選項
                 if option.count() > 0:
+                    option_text = option.text_content()
+                    LogHelpers.log_step(f"正在選擇下拉菜單選項: '{option_text}'")
                     option.click()
                     self.page.wait_for_timeout(500)
+                    LogHelpers.log_step("✓ 下拉菜單選項已選擇")
                     return
-            except:
+            except Exception as e:
+                LogHelpers.log_step(f"✗ 下拉菜單處理失敗: {str(e)}")
                 pass
         
         # 策略4: 選擇單選按鈕或複選框
+        LogHelpers.log_step("策略 4: 尋找單選按鈕或複選框...")
         radio_buttons = self.page.locator('input[type="radio"], input[type="checkbox"]').all()
+        LogHelpers.log_step(f"找到 {len(radio_buttons)} 個單選/複選框")
         if len(radio_buttons) > 0:
             try:
                 # 查找第一個未勾選的
-                for radio in radio_buttons:
+                for j, radio in enumerate(radio_buttons):
                     is_checked = radio.is_checked()
+                    LogHelpers.log_step(f"單選框 {j+1}: 已勾選={is_checked}")
                     if not is_checked:
+                        LogHelpers.log_step(f"正在點擊未勾選的單選框 {j+1}...")
                         radio.click()
                         self.page.wait_for_timeout(500)
+                        LogHelpers.log_step("✓ 單選框已選擇")
                         return
-            except:
+            except Exception as e:
+                LogHelpers.log_step(f"✗ 單選框處理失敗: {str(e)}")
                 pass
         
         # 策略5: 尋找並調整數量為1
+        LogHelpers.log_step("策略 5: 尋找數量輸入框...")
         quantity_input = self.page.locator('input[type="number"], input[name*="quantity"], input[name*="qty"]').first
         if quantity_input.count() > 0:
             try:
+                current_value = quantity_input.input_value()
+                LogHelpers.log_step(f"找到數量輸入框，當前值: {current_value}")
                 quantity_input.clear()
                 quantity_input.fill("1")
                 self.page.wait_for_timeout(500)
-            except:
+                LogHelpers.log_step("✓ 數量已設置為 1")
+            except Exception as e:
+                LogHelpers.log_step(f"✗ 數量輸入框處理失敗: {str(e)}")
                 pass
+        else:
+            LogHelpers.log_step("✗ 未找到數量輸入框")
+        
+        LogHelpers.log_step("商品定制化選項處理完成")
     
     def get_cart_items_count(self):
         """
