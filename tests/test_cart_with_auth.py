@@ -169,14 +169,15 @@ class TestShoppingIntegration:
     @pytest.mark.ui
     def test_add_product_and_clear_cart(self, authenticated_page):
         """
-        測試：完整購物流程 - 選品 → 加入購物車 → 驗證 → 清空
+        測試：完整購物流程 - 登錄驗證 → 選品 → 加入購物車 → 驗證 → 清空
         
         這是一個完整的購物操作演示，包括：
-        1. 導航到商品頁面
-        2. 獲取第一個商品信息
-        3. 添加到購物車（處理定制化選項）
-        4. 前往購物車驗證
-        5. 清空購物車
+        1. 進入用戶頁面確認登錄狀態
+        2. 導航到商品頁面
+        3. 獲取第一個商品信息
+        4. 添加到購物車（處理定制化選項）
+        5. 前往購物車驗證
+        6. 清空購物車
         
         注意：非headless模式下，每個操作完成後會停留2秒以觀察結果
         """
@@ -187,12 +188,26 @@ class TestShoppingIntegration:
         wait_for_observation = True  # 由於見到頁面，假設非headless模式
         
         LogHelpers.log_step("=" * 60)
-        LogHelpers.log_step("開始：選品 → 加入購物車 → 驗證 → 清空")
+        LogHelpers.log_step("開始：登錄驗證 → 選品 → 加入購物車 → 驗證 → 清空")
         LogHelpers.log_step(f"模式: {'Headless' if not wait_for_observation else 'Visible (含觀察等待)'}")
         LogHelpers.log_step("=" * 60)
         
-        # 步驟 1: 導航到貓貓專區
-        LogHelpers.log_step("\n[步驟 1/5] 導航到貓貓專區")
+        # 步驟 1: 進入用戶頁面驗證登錄狀態
+        LogHelpers.log_step("\n[步驟 1/6] 進入用戶頁面驗證登錄狀態")
+        page.goto("https://www.dogcatstar.com/my-account/")
+        page.wait_for_load_state("domcontentloaded", timeout=10000)
+        LogHelpers.log_step(f"URL: {page.url}")
+        LogHelpers.log_step(f"頁面標題: {page.title()}")
+        
+        # 確認已進入 my-account 頁面
+        assert "my-account" in page.url, "未進入用戶頁面"
+        LogHelpers.log_step("[PASS] 已進入用戶頁面 - 登錄狀態確認成功")
+        if wait_for_observation:
+            page.wait_for_timeout(2000)
+        LogHelpers.log_step("")
+        
+        # 步驟 2: 導航到貓貓專區
+        LogHelpers.log_step("[步驟 2/6] 導航到貓貓專區")
         page.goto("https://www.dogcatstar.com/product-category/cat/")
         page.wait_for_load_state("domcontentloaded", timeout=10000)
         LogHelpers.log_step(f"URL: {page.url}")
@@ -201,8 +216,8 @@ class TestShoppingIntegration:
             page.wait_for_timeout(2000)
         LogHelpers.log_step("")
         
-        # 步驟 2: 獲取並記錄第一個商品信息
-        LogHelpers.log_step("[步驟 2/5] 獲取第一個商品信息")
+        # 步驟 3: 獲取並記錄第一個商品信息
+        LogHelpers.log_step("[步驟 3/6] 獲取第一個商品信息")
         product_info = cart_page.get_first_product_info()
         LogHelpers.log_step(f"商品名稱: {product_info['name']}")
         LogHelpers.log_step(f"商品價格: {product_info['price']}")
@@ -211,8 +226,8 @@ class TestShoppingIntegration:
             page.wait_for_timeout(2000)
         LogHelpers.log_step("")
         
-        # 步驟 3: 添加商品到購物車（含定制化選項）
-        LogHelpers.log_step("[步驟 3/5] 添加商品到購物車（處理定制化選項）")
+        # 步驟 4: 添加商品到購物車（含定制化選項）
+        LogHelpers.log_step("[步驟 4/6] 添加商品到購物車（處理定制化選項）")
         page.wait_for_load_state("domcontentloaded", timeout=5000)
         
         # 檢測是否為 headless 模式
@@ -224,8 +239,8 @@ class TestShoppingIntegration:
         LogHelpers.log_step("[PASS] 商品已添加到購物車")
         LogHelpers.log_step("")
         
-        # 步驟 4: 導航到購物車並驗證商品
-        LogHelpers.log_step("[步驟 4/5] 導航到購物車並驗證商品")
+        # 步驟 5: 導航到購物車並驗證商品
+        LogHelpers.log_step("[步驟 5/6] 導航到購物車並驗證商品")
         page.goto("https://www.dogcatstar.com/cart/")
         page.wait_for_load_state("domcontentloaded", timeout=10000)
         LogHelpers.log_step(f"URL: {page.url}")
@@ -245,8 +260,8 @@ class TestShoppingIntegration:
             page.wait_for_timeout(2000)
         LogHelpers.log_step("")
         
-        # 步驟 5: 清空購物車
-        LogHelpers.log_step("[步驟 5/5] 清空購物車")
+        # 步驟 6: 清空購物車
+        LogHelpers.log_step("[步驟 6/6] 清空購物車")
         cart_page.clear_cart()
         page.wait_for_timeout(1000)
         
