@@ -9,6 +9,80 @@ class CartPage:
         self.page = page
         self.page.goto("https://www.dogcatstar.com/")
     
+    def close_popup_if_exists(self):
+        """
+        檢測並關閉購物車頁面上的彈出窗口
+        支持關閉按鈕和"今日不再顯示"按鈕
+        """
+        LogHelpers.log_step("檢查是否有彈出窗口...")
+        self.page.wait_for_timeout(1000)  # 等待彈出窗口加載
+        
+        # 查找彈出窗口容器
+        popup_selectors = [
+            '[role="dialog"]',
+            '[class*="modal"]',
+            '[class*="popup"]',
+            '[class*="overlay"]',
+            '.swal2-container',  # SweetAlert
+            '.modal',
+        ]
+        
+        popup_found = False
+        for selector in popup_selectors:
+            popups = self.page.locator(selector).all()
+            if len(popups) > 0:
+                # 檢查彈出窗口是否可見
+                for popup in popups:
+                    if popup.is_visible():
+                        LogHelpers.log_step(f"✓ 找到彈出窗口: {selector}")
+                        popup_found = True
+                        
+                        # 先嘗試找"今日不再顯示"按鈕
+                        do_not_show_button = popup.locator('button:has-text("今日不再顯示"), label:has-text("今日不再顯示")').first
+                        if do_not_show_button.count() > 0:
+                            try:
+                                LogHelpers.log_step("點擊 '今日不再顯示'...")
+                                do_not_show_button.click()
+                                self.page.wait_for_timeout(500)
+                            except Exception as e:
+                                LogHelpers.log_step(f"WARNING: 點擊失敗: {str(e)}")
+                        
+                        # 然後尋找關閉按鈕
+                        close_buttons = [
+                            popup.locator('button:has-text("關閉")'),
+                            popup.locator('button:has-text("×")'),
+                            popup.locator('button:has-text("X")'),
+                            popup.locator('button.close, button[class*="close"], button[aria-label*="close"]'),
+                            popup.locator('.swal2-close'),  # SweetAlert
+                        ]
+                        
+                        for close_btn in close_buttons:
+                            if close_btn.first.count() > 0:
+                                try:
+                                    LogHelpers.log_step("點擊關閉按鈕...")
+                                    close_btn.first.click(force=True)
+                                    self.page.wait_for_timeout(500)
+                                    LogHelpers.log_step("✓ 彈出窗口已關閉")
+                                    return True
+                                except Exception as e:
+                                    LogHelpers.log_step(f"WARNING: 關閉失敗: {str(e)}")
+                                    continue
+                        
+                        # 如果都找不到，嘗試點擊彈出窗口外部關閉
+                        try:
+                            LogHelpers.log_step("嘗試按 ESC 鍵關閉...")
+                            self.page.press("Escape")
+                            self.page.wait_for_timeout(500)
+                            LogHelpers.log_step("✓ 已按 ESC 鍵")
+                            return True
+                        except Exception as e:
+                            LogHelpers.log_step(f"WARNING: ESC 失敗: {str(e)}")
+        
+        if not popup_found:
+            LogHelpers.log_step("✓ 未發現彈出窗口")
+        
+        return not popup_found
+    
     # 定位器
     @property
     def cart_link(self):

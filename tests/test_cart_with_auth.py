@@ -25,9 +25,16 @@ class TestCartWithAuth:
         2. 驗證頁面加載成功（可能重定向）
         """
         page = authenticated_page
+        cart_page = CartPage(page)
+        
         LogHelpers.log_step("導航到購物車頁面")
         page.goto("https://www.dogcatstar.com/cart/")
         page.wait_for_load_state("domcontentloaded", timeout=10000)
+        
+        # 關閉購物車頁面上的任何彈出窗口
+        LogHelpers.log_step("檢查並關閉購物車彈出窗口...")
+        cart_page.close_popup_if_exists()
+        page.wait_for_timeout(1000)
         
         LogHelpers.log_step(f"最終 URL: {page.url}")
         LogHelpers.log_step(f"頁面標題: {page.title()}")
@@ -136,6 +143,12 @@ class TestShoppingIntegration:
         page.goto("https://www.dogcatstar.com/cart/")
         page.wait_for_load_state("domcontentloaded", timeout=10000)
         LogHelpers.log_step(f"URL: {page.url}")
+        
+        # 關閉購物車頁面上的任何彈出窗口
+        LogHelpers.log_step("檢查並關閉購物車彈出窗口...")
+        cart_page.close_popup_if_exists()
+        page.wait_for_timeout(1000)
+        
         LogHelpers.log_step(f"頁面內容長度: {len(page.content())} 字符")
         LogHelpers.log_step(f"Cookie 數量: {len(page.context.cookies())} (保持不變)")
         LogHelpers.log_step("[PASS] 購物車頁面已加載\n")
@@ -255,6 +268,11 @@ class TestShoppingIntegration:
         page.goto("https://www.dogcatstar.com/cart/")
         page.wait_for_load_state("domcontentloaded", timeout=10000)
         LogHelpers.log_step(f"URL: {page.url}")
+        
+        # 關閉購物車頁面上的任何彈出窗口
+        LogHelpers.log_step("檢查並關閉購物車彈出窗口...")
+        cart_page.close_popup_if_exists()
+        page.wait_for_timeout(1000)
         
         # 驗證商品是否在購物車中
         is_product_in_cart = cart_page.verify_product_in_cart(product_info['name'])
