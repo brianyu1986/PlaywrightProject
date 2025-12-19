@@ -304,102 +304,78 @@ class CartPage:
         LogHelpers.log_step("開始處理商品定制化選項...")
         self.page.wait_for_timeout(500)
         
-        # 策略1: 尋找並點擊"鲁斯佛款"選項
-        LogHelpers.log_step("策略 1: 尋找 '鲁斯佛款' 選項...")
-        rostoff_option = self.page.locator('button:has-text("鲁斯佛"), span:has-text("鲁斯佛")').first
-        if rostoff_option.count() > 0:
-            try:
-                LogHelpers.log_step("✓ 找到 '鲁斯佛款' 選項，正在點擊...")
-                rostoff_option.click()
-                self.page.wait_for_timeout(500)
-                LogHelpers.log_step("✓ '鲁斯佛款' 已選擇")
-                return
-            except Exception as e:
-                LogHelpers.log_step(f"✗ '鲁斯佛款' 點擊失敗: {str(e)}")
-                pass
-        else:
-            LogHelpers.log_step("✗ 未找到 '鲁斯佛款' 選項")
-        
-        # 策略2: 尋找並點擊任何規格選項按鈕
-        LogHelpers.log_step("策略 2: 尋找規格選項按鈕...")
-        option_buttons = self.page.locator('button[class*="variant"], button[class*="option"], button[class*="size"]').all()
-        LogHelpers.log_step(f"找到 {len(option_buttons)} 個規格選項按鈕")
-        if len(option_buttons) > 0:
-            try:
-                button_text = option_buttons[0].text_content()
-                LogHelpers.log_step(f"正在點擊第一個規格按鈕: '{button_text}'")
-                option_buttons[0].click()
-                self.page.wait_for_timeout(500)
-                LogHelpers.log_step("✓ 規格選項已選擇")
-                return
-            except Exception as e:
-                LogHelpers.log_step(f"✗ 規格選項點擊失敗: {str(e)}")
-                pass
-        else:
-            LogHelpers.log_step("✗ 未找到規格選項按鈕")
-        
-        # 策略3: 選擇下拉菜單選項
-        LogHelpers.log_step("策略 3: 尋找下拉菜單...")
-        selects = self.page.locator('select').all()
-        LogHelpers.log_step(f"找到 {len(selects)} 個下拉菜單")
-        for i, select in enumerate(selects):
-            try:
-                LogHelpers.log_step(f"正在處理第 {i+1} 個下拉菜單...")
-                # 點擊 select 元素打開下拉菜單
-                select.click()
-                self.page.wait_for_timeout(300)
-                
-                # 查找第一個選項
-                option = self.page.locator('option').nth(1)  # 跳過預設選項
-                if option.count() > 0:
-                    option_text = option.text_content()
-                    LogHelpers.log_step(f"正在選擇下拉菜單選項: '{option_text}'")
-                    option.click()
+        try:
+            # 策略1: 尋找並點擊"鲁斯佛款"選項
+            LogHelpers.log_step("策略 1: 尋找 '鲁斯佛款' 選項...")
+            rostoff_option = self.page.locator('button:has-text("鲁斯佛"), span:has-text("鲁斯佛")').first
+            if rostoff_option.count() > 0:
+                try:
+                    LogHelpers.log_step("✓ 找到 '鲁斯佛款' 選項，正在點擊...")
+                    rostoff_option.click()
                     self.page.wait_for_timeout(500)
-                    LogHelpers.log_step("✓ 下拉菜單選項已選擇")
+                    LogHelpers.log_step("✓ '鲁斯佛款' 已選擇")
                     return
-            except Exception as e:
-                LogHelpers.log_step(f"✗ 下拉菜單處理失敗: {str(e)}")
-                pass
+                except Exception as e:
+                    LogHelpers.log_step(f"✗ '鲁斯佛款' 點擊失敗: {str(e)}")
+            else:
+                LogHelpers.log_step("✗ 未找到 '鲁斯佛款' 選項")
+            
+            # 策略2: 尋找並點擊任何規格選項按鈕
+            LogHelpers.log_step("策略 2: 尋找規格選項按鈕...")
+            option_buttons = self.page.locator('button[class*="variant"], button[class*="option"], button[class*="size"]').all()
+            LogHelpers.log_step(f"找到 {len(option_buttons)} 個規格選項按鈕")
+            if len(option_buttons) > 0:
+                try:
+                    button_text = option_buttons[0].text_content()
+                    LogHelpers.log_step(f"正在點擊第一個規格按鈕: '{button_text}'")
+                    option_buttons[0].click()
+                    self.page.wait_for_timeout(500)
+                    LogHelpers.log_step("✓ 規格選項已選擇")
+                    return
+                except Exception as e:
+                    LogHelpers.log_step(f"✗ 規格選項點擊失敗: {str(e)}")
+            else:
+                LogHelpers.log_step("✗ 未找到規格選項按鈕")
+            
+            # 策略3: 選擇單選按鈕或複選框
+            LogHelpers.log_step("策略 3: 尋找單選按鈕或複選框...")
+            radio_buttons = self.page.locator('input[type="radio"], input[type="checkbox"]').all()
+            LogHelpers.log_step(f"找到 {len(radio_buttons)} 個單選/複選框")
+            if len(radio_buttons) > 0:
+                try:
+                    # 查找第一個未勾選的
+                    for j, radio in enumerate(radio_buttons):
+                        is_checked = radio.is_checked()
+                        LogHelpers.log_step(f"單選框 {j+1}: 已勾選={is_checked}")
+                        if not is_checked:
+                            LogHelpers.log_step(f"正在點擊未勾選的單選框 {j+1}...")
+                            radio.click()
+                            self.page.wait_for_timeout(500)
+                            LogHelpers.log_step("✓ 單選框已選擇")
+                            return
+                except Exception as e:
+                    LogHelpers.log_step(f"✗ 單選框處理失敗: {str(e)}")
+            
+            # 策略4: 尋找並調整數量為1
+            LogHelpers.log_step("策略 4: 尋找數量輸入框...")
+            quantity_input = self.page.locator('input[type="number"], input[name*="quantity"], input[name*="qty"]').first
+            if quantity_input.count() > 0:
+                try:
+                    current_value = quantity_input.input_value()
+                    LogHelpers.log_step(f"找到數量輸入框，當前值: {current_value}")
+                    quantity_input.clear()
+                    quantity_input.fill("1")
+                    self.page.wait_for_timeout(500)
+                    LogHelpers.log_step("✓ 數量已設置為 1")
+                except Exception as e:
+                    LogHelpers.log_step(f"✗ 數量輸入框處理失敗: {str(e)}")
+            else:
+                LogHelpers.log_step("✗ 未找到數量輸入框")
+            
+            LogHelpers.log_step("商品定制化選項處理完成")
         
-        # 策略4: 選擇單選按鈕或複選框
-        LogHelpers.log_step("策略 4: 尋找單選按鈕或複選框...")
-        radio_buttons = self.page.locator('input[type="radio"], input[type="checkbox"]').all()
-        LogHelpers.log_step(f"找到 {len(radio_buttons)} 個單選/複選框")
-        if len(radio_buttons) > 0:
-            try:
-                # 查找第一個未勾選的
-                for j, radio in enumerate(radio_buttons):
-                    is_checked = radio.is_checked()
-                    LogHelpers.log_step(f"單選框 {j+1}: 已勾選={is_checked}")
-                    if not is_checked:
-                        LogHelpers.log_step(f"正在點擊未勾選的單選框 {j+1}...")
-                        radio.click()
-                        self.page.wait_for_timeout(500)
-                        LogHelpers.log_step("✓ 單選框已選擇")
-                        return
-            except Exception as e:
-                LogHelpers.log_step(f"✗ 單選框處理失敗: {str(e)}")
-                pass
-        
-        # 策略5: 尋找並調整數量為1
-        LogHelpers.log_step("策略 5: 尋找數量輸入框...")
-        quantity_input = self.page.locator('input[type="number"], input[name*="quantity"], input[name*="qty"]').first
-        if quantity_input.count() > 0:
-            try:
-                current_value = quantity_input.input_value()
-                LogHelpers.log_step(f"找到數量輸入框，當前值: {current_value}")
-                quantity_input.clear()
-                quantity_input.fill("1")
-                self.page.wait_for_timeout(500)
-                LogHelpers.log_step("✓ 數量已設置為 1")
-            except Exception as e:
-                LogHelpers.log_step(f"✗ 數量輸入框處理失敗: {str(e)}")
-                pass
-        else:
-            LogHelpers.log_step("✗ 未找到數量輸入框")
-        
-        LogHelpers.log_step("商品定制化選項處理完成")
+        except Exception as e:
+            LogHelpers.log_step(f"WARNING: 定制化處理期間發生異常: {str(e)}")
     
     def get_cart_items_count(self):
         """
